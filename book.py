@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 
+# Copyright © 2021 Waldo Luis Ribeiro
+# Released under the terms of the GNU General Public Licence, version 3
+# <http://www.gnu.org/licenses/>
+
 from __future__ import annotations
+
+__license__ = 'GPL v3'
+__author__ = 'Waldo Luis Ribeiro'
 
 import csv
 import os
@@ -8,6 +15,7 @@ import random
 import re
 
 import zhon.hanzi
+
 from utils import index_of_first
 
 

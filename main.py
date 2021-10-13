@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# Copyright © 2021 Waldo Luis Ribeiro
+# Released under the terms of the GNU General Public Licence, version 3
+# <http://www.gnu.org/licenses/>
+
+__license__ = 'GPL v3'
+__version__ = '0.1'
+__author__ = 'Waldo Luis Ribeiro'
+
 import io
 import os
 import sys
@@ -8,9 +16,6 @@ import sys
 import PySimpleGUI as sg
 
 from book import Book
-
-__version__ = '0.1'
-__author__ = 'Waldo Luis Ribeiro'
 
 processed_books = {}
 
