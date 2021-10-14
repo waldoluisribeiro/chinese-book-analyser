@@ -1,8 +1,15 @@
 # Chinese Book Analyser
 
-Chinese Book Analyser exports lists of the unique characters in books, along with their frequency, the average distance between their occurrences, and example sentences. It also exports lists of characters to learn, based on a specified threshold frequency, to approximately achieve a given comprehension percentage. Basic statistics can also be exported. All data are exported as CSV files.
+Chinese Book Analyser exports lists of the unique characters in books (TXT files, in fact), along with their frequency, the average distance between their occurrences, and example sentences. It also exports lists of characters to learn, based on a specified threshold frequency, to approximately achieve a given comprehension percentage. Basic statistics can also be exported. All data are exported as CSV files.
 
 ## Usage
+1. Choose the folder in which your books are stored. The books must be in TXT format.
+2. Choose the folder to which you want to export the CSV files.
+3. In the list of books shown on the left-hand side of the main window, select the books whose data you want to export. To select multiple books, hold down the Ctrl key and left-click each book.
+4. Configure the export options, which are explained below.
+5. Click on the 'Export' button.
+
+## Options
 ### Folders
 #### Books
 Choose the folder in which your books are stored in TXT format by selecting 'Browse' alongside the text field labelled 'Books'.
