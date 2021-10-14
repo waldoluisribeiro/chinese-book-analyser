@@ -8,6 +8,7 @@ Chinese Book Analyser exports lists of the unique characters in books (TXT files
 3. In the list of books shown on the left-hand side of the main window, select the books whose data you want to export. To select multiple books, hold down the Ctrl key and left-click each book.
 4. Configure the export options, which are explained below.
 5. Click on the 'Export' button.
+6. Once the export process has completed, a popup will display a log.
 
 ## Options
 ### Folders
