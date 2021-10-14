@@ -499,7 +499,7 @@ def main():
                     stats_export_mode
                 )
 
-                sg.popup_scrolled(new_stdout.getvalue(), title='Export Log')
+                sg.popup_scrolled(new_stdout.getvalue(), title='Export Log', size=(50, 20))
                 sys.stdout = old_stdout
 
     window.close()
