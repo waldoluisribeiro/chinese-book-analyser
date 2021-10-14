@@ -370,7 +370,7 @@ def setup_window() -> sg.Window:
         ]
     ]
 
-    return sg.Window('Chinese Book Exporter', layout)
+    return sg.Window('Chinese Book Analyser', layout)
 
 
 def main():
