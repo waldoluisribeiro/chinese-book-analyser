@@ -20,9 +20,13 @@ from book import Book
 processed_books = {}
 
 
-def export_books(book_file_names: list[str], book_folder_path: str, export_folder_path: str,
-                 hanzi_export: tuple[int, bool, bool, int], file_export: int,
-                 learn_export: tuple[int, int, int, bool, bool], stats_export: int) -> None:
+def export_books(book_file_names: list[str],
+                 book_folder_path: str,
+                 export_folder_path: str,
+                 hanzi_export: tuple[int, bool, bool, int],
+                 file_export: int,
+                 learn_export: tuple[int, int, int, bool, bool],
+                 stats_export: tuple[int, tuple[bool, bool, bool]]) -> None:
     """
     :param book_file_names: Book filenames
     :type book_file_names:  list
@@ -31,19 +35,21 @@ def export_books(book_file_names: list[str], book_folder_path: str, export_folde
     :param export_folder_path: Export folder path
     :type export_folder_path: str
     :param hanzi_export: Parameters (mode, frequency_reverse, distance_reverse, usage_examples) for exporting
-        unique hanzi, where mode may be 0 (None), 1 (Individual) or 2 (Shared), frequency_reverse may be True
-        (sorted most to least frequent) or False, distance_reverse may be True (sorted most to least spaced)
-        or False, and usage_examples is the number of example sentences to be exported alongside each hanzi.
+        unique hanzi, where mode may be 0 (None), 1 (Individual) or 2 (Shared), frequency_reverse may be `True`
+        (sorted most to least frequent) or `False`, distance_reverse may be `True` (sorted most to least spaced)
+        or `False`, and usage_examples is the number of example sentences to be exported alongside each hanzi.
     :type hanzi_export: tuple
     :param file_export: Which file(s) to export (0: unique hanzi, 1: hanzi to learn, 2: both).
         Only relevant if hanzi_exp mode == 1.
     :type file_export: int
     :param learn_export: Parameters (comprehension_percentage, frequency_threshold, usage_examples, frequency_reverse,
-        distance_reverse) for exporting hanzi to learn, where frequency_reverse may be True (sorted most to least
-        frequent) or False and distance_reverse may be True (sorted most to least spaced) or False.
+        distance_reverse) for exporting hanzi to learn, where frequency_reverse may be `True` (sorted most to least
+        frequent) or `False` and distance_reverse may be `True` (sorted most to least spaced) or `False`.
     :type learn_export: tuple
-    :param stats_export: Statistics export mode (0: none, 1: individual, 2: combined)
-    :type stats_export: int
+    :param stats_export: Parameters (stats_export_mode, (total_hanzi, unique_hanzi, hanzi_percentiles)) for exporting
+        statistics, where stats_export_mode may be 0 (none), 1 (individual) or 2 (combined), and total_hanzi,
+        unique_hanzi and hanzi_percentiles may be `True` or `False`.
+    :type stats_export: tuple
 
     :return: None
     :rtype: None
@@ -99,16 +105,16 @@ def export_books(book_file_names: list[str], book_folder_path: str, export_folde
             except IOError:
                 print('- could not export shared hanzi')
         # exporting a single file with the statistics of all the selected books
-        if stats_export == 2:
+        if stats_export[0] == 2:
             try:
-                Book.export_combined_statistics_csv(books_to_export, export_folder_path)
+                Book.export_combined_statistics_csv(books_to_export, export_folder_path, stats_export[1])
             except IOError:
                 print('- could not export combined statistics')
         # exporting the statistics of each selected book individually
-        elif stats_export == 1:
+        elif stats_export[0] == 1:
             for book in books_to_export:
                 try:
-                    book.export_statistics(export_folder_path)
+                    book.export_statistics(export_folder_path, stats_export[1])
                 except IOError:
                     print(f'- could not export statistics for "{book.title}"')
     else:
@@ -116,7 +122,7 @@ def export_books(book_file_names: list[str], book_folder_path: str, export_folde
 
 
 def disable_export_button(book_list: list[str], export_path: str, hanzi_mode: tuple[bool, bool, bool],
-                          stats_mode: tuple[bool, bool, bool]) -> bool:
+                          stats_mode: tuple[bool, bool, bool], stats_options: tuple[bool, bool, bool]) -> bool:
     """
     Decides whether to disable the export button.
 
@@ -128,6 +134,8 @@ def disable_export_button(book_list: list[str], export_path: str, hanzi_mode: tu
     :type hanzi_mode: tuple
     :param stats_mode: Statistics export mode
     :type stats_mode: tuple
+    :param stats_options: Statistics export options
+    :type stats_options: tuple
 
     :return: Returns `True` if export button should be disabled, and vice versa.
     :rtype: bool
@@ -140,37 +148,12 @@ def disable_export_button(book_list: list[str], export_path: str, hanzi_mode: tu
         return True
     elif len(book_list) == 1 and (hanzi_mode[2] or stats_mode[2]):
         return True
+    elif (stats_mode[1] or stats_mode[2]) and (True not in stats_options):
+        return True
     return False
 
 
 def setup_window() -> sg.Window:
-    book_sel_col = [
-        [
-            sg.Frame('Books',
-                     [
-                         [
-                             sg.Listbox(
-                                 values=[],
-                                 enable_events=True,
-                                 select_mode=sg.PySimpleGUI.SELECT_MODE_EXTENDED,
-                                 size=(40, 20),
-                                 key='-BOOK LIST-'
-                             )
-                         ],
-                         [
-                             sg.Button(
-                                 'Export',
-                                 enable_events=True,
-                                 expand_x=True,
-                                 disabled=True,
-                                 key='-EXPORT BUTTON-'
-                             )
-                         ]
-                     ]
-                     )
-        ]
-    ]
-
     path_frame = [
         [
             sg.Text("Books:"),
@@ -189,6 +172,36 @@ def setup_window() -> sg.Window:
                 key='-EXPORT PATH-'
             ),
             sg.FolderBrowse(target='-EXPORT PATH-')
+        ]
+    ]
+
+    book_sel_col = [
+        [
+            sg.Frame('Folders', path_frame),
+        ],
+        [
+            sg.Frame('Books',
+                     [
+                         [
+                             sg.Listbox(
+                                 values=[],
+                                 enable_events=True,
+                                 select_mode=sg.PySimpleGUI.SELECT_MODE_EXTENDED,
+                                 size=(60, 20),
+                                 key='-BOOK LIST-'
+                             )
+                         ],
+                         [
+                             sg.Button(
+                                 'Export',
+                                 enable_events=True,
+                                 expand_x=True,
+                                 disabled=True,
+                                 key='-EXPORT BUTTON-'
+                             )
+                         ]
+                     ]
+                     )
         ]
     ]
 
@@ -216,34 +229,6 @@ def setup_window() -> sg.Window:
                 'EXP_HANZI_MODE',
                 enable_events=True,
                 key='-HANZI MODE SHA-'
-            )
-        ]
-    ]
-
-    exp_opt_frame = [
-        [
-            sg.Radio(
-                'Unique Hanzi',
-                'EXP_FILES',
-                enable_events=True,
-                key='-EXP FILES HANZI-'
-            )
-        ],
-        [
-            sg.Radio(
-                'Hanzi to Learn',
-                'EXP_FILES',
-                enable_events=True,
-                key='-EXP FILES LEARN-',
-                default=True
-            )
-        ],
-        [
-            sg.Radio(
-                'Both',
-                'EXP_FILES',
-                enable_events=True,
-                key='-EXP FILES BOTH-'
             )
         ]
     ]
@@ -284,33 +269,46 @@ def setup_window() -> sg.Window:
         ]
     ]
 
+    exp_opt_frame = [
+        [
+            sg.Radio(
+                'Unique Hanzi',
+                'EXP_FILES',
+                enable_events=True,
+                key='-EXP FILES HANZI-'
+            )
+        ],
+        [
+            sg.Radio(
+                'Hanzi to Learn',
+                'EXP_FILES',
+                enable_events=True,
+                key='-EXP FILES LEARN-',
+                default=True
+            )
+        ],
+        [
+            sg.Radio(
+                'Both',
+                'EXP_FILES',
+                enable_events=True,
+                key='-EXP FILES BOTH-'
+            )
+        ]
+    ]
+
     learn_frame = [
         [
-            sg.Text('Usage examples:', size=18),
-            sg.Slider(
-                range=(0, 10),
-                default_value=2,
-                orientation='h',
-                key='-USG EX SLIDER-'
-            )
+            sg.Text('Usage examples:', size=16),
+            sg.Spin(values=[i for i in range(0, 11)], initial_value=2, size=4, key='-USG EX SPIN-')
         ],
         [
-            sg.Text('Comprehension:', size=18),
-            sg.Slider(
-                range=(90, 100),
-                default_value=98,
-                orientation='h',
-                key='-COMP PERC SLIDER-'
-            )
+            sg.Text('Comprehension:', size=16),
+            sg.Spin(values=[i for i in range(90, 101)], initial_value=98, size=4, key='-COMP PERC SPIN-')
         ],
         [
-            sg.Text('Frequency threshold:', size=18),
-            sg.Slider(
-                range=(10, 50),
-                default_value=20,
-                orientation='h',
-                key='-FREQ THRESH SLIDER-'
-            )
+            sg.Text('Frequency threshold:', size=16),
+            sg.Spin(values=[i for i in range(10, 51)], initial_value=20, size=4, key='-FREQ THRESH SPIN-')
         ]
     ]
 
@@ -342,24 +340,59 @@ def setup_window() -> sg.Window:
         ]
     ]
 
-    config_col = [
+    exp_stats_options_frame = [
         [
-            sg.Frame('Folders', path_frame),
+            sg.Checkbox(
+                'Total number of hanzi',
+                disabled=True,
+                enable_events=True,
+                key='-STATS OPT HANZI-'
+            )
         ],
+        [
+            sg.Checkbox(
+                'Total number of unique hanzi',
+                disabled=True,
+                enable_events=True,
+                key='-STATS OPT UNIQUE HANZI-'
+            )
+        ],
+        [
+            sg.Checkbox(
+                'Hanzi percentiles (%)',
+                disabled=True,
+                enable_events=True,
+                key='-STATS OPT HANZI PERC-'
+            )
+        ]
+    ]
+
+    config_col = [
         [
             sg.Frame('Hanzi',
                      [
                          [
                              sg.Frame('Mode', exp_hanzi_mode_frame),
-                             sg.Frame('Export', exp_opt_frame),
                              sg.Frame('Frequency', hanzi_sort_frame, expand_y=True),
                              sg.Frame('Distance', dist_sort_frame, expand_y=True)
                          ],
                          [
-                             sg.Frame('Learning', learn_frame),
-                             sg.Frame('Statistics', exp_stats_mode_frame, expand_y=True)
+                             sg.Frame('Export', exp_opt_frame),
+                             sg.Frame('Learning', learn_frame, expand_y=True)
                          ]
-                     ])
+                     ]
+                     )
+        ],
+        [
+            sg.Frame('Statistics',
+                     [
+                         [
+                             sg.Frame('Mode', exp_stats_mode_frame),
+                             sg.Frame('Options', exp_stats_options_frame)
+                         ]
+                     ],
+                     expand_x=True
+                     )
         ]
     ]
 
@@ -395,29 +428,33 @@ def main():
                 values['-STATS MODE NONE-'],
                 values['-STATS MODE IND-'],
                 values['-STATS MODE COM-']
+            ),
+            (
+                values['-STATS OPT HANZI-'],
+                values['-STATS OPT UNIQUE HANZI-'],
+                values['-STATS OPT HANZI PERC-']
             )
         ]
         hanzi_sort_opt = ['-HANZI SORT FORW-', '-HANZI SORT REV-']
         dist_sort_opt = ['-DIST SORT FORW-', '-DIST SORT REV-']
-        learn_sliders = ['-USG EX SLIDER-',
-                         '-COMP PERC SLIDER-', '-FREQ THRESH SLIDER-']
+        learn_sliders = ['-USG EX SPIN-',
+                         '-COMP PERC SPIN-', '-FREQ THRESH SPIN-']
         exp_opt = ['-EXP FILES HANZI-',
                    '-EXP FILES LEARN-', '-EXP FILES BOTH-']
 
         # import folder was selected
         if event == '-BOOK PATH-':
             folder = values['-BOOK PATH-']
-            # get list of files in folder
-            file_list = os.listdir(folder)
-
-            # get list of .txt files in folder
-            filenames = [
-                f.removesuffix('.txt') for f in file_list
-                if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith('.txt')
-            ]
-
-            # show list of .txt files in listbox with key -BOOK LIST-
-            window['-BOOK LIST-'].update(filenames)
+            if folder:
+                # get list of files in folder
+                file_list = os.listdir(folder)
+                # get list of .txt files in folder
+                filenames = [
+                    f.removesuffix('.txt') for f in file_list
+                    if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith('.txt')
+                ]
+                # show list of .txt files in listbox with key -BOOK LIST-
+                window['-BOOK LIST-'].update(filenames)
 
         # export folder was selected
         elif event == '-EXPORT PATH-':
@@ -427,6 +464,7 @@ def main():
         elif event == '-BOOK LIST-':
             window['-EXPORT BUTTON-'].update(disabled=disable_export_button(*disable_exp_btn_criteria))
 
+        # hanzi export mode was altered
         elif event.startswith('-HANZI MODE'):
             if event.endswith('NONE-'):
                 for elem in [*hanzi_sort_opt, *dist_sort_opt, *learn_sliders, *exp_opt]:
@@ -441,7 +479,19 @@ def main():
                     window[elem].update(disabled=True)
             window['-EXPORT BUTTON-'].update(disabled=disable_export_button(*disable_exp_btn_criteria))
 
+        # statistics export mode was altered
         elif event.startswith('-STATS MODE'):
+            statistics_options_checkboxes = ['-STATS OPT HANZI-', '-STATS OPT UNIQUE HANZI-', '-STATS OPT HANZI PERC-']
+            if event.endswith('NONE-'):
+                for checkbox in statistics_options_checkboxes:
+                    window[checkbox].update(disabled=True)
+            else:
+                for checkbox in statistics_options_checkboxes:
+                    window[checkbox].update(disabled=False)
+            window['-EXPORT BUTTON-'].update(disabled=disable_export_button(*disable_exp_btn_criteria))
+
+        # statistics export option was altered
+        elif event.startswith('-STATS OPT'):
             window['-EXPORT BUTTON-'].update(disabled=disable_export_button(*disable_exp_btn_criteria))
 
         # export button was selected and listbox item is selected
@@ -480,9 +530,15 @@ def main():
                 elif values['-STATS MODE IND-']:
                     stats_export_mode = 1
 
-                comprehension_percentage = int(values['-COMP PERC SLIDER-'])
-                frequency_threshold = int(values['-FREQ THRESH SLIDER-'])
-                example_sentences = int(values['-USG EX SLIDER-'])
+                stats_export_options = (
+                    values['-STATS OPT HANZI-'],
+                    values['-STATS OPT UNIQUE HANZI-'],
+                    values['-STATS OPT HANZI PERC-']
+                )
+
+                comprehension_percentage = int(values['-COMP PERC SPIN-'])
+                frequency_threshold = int(values['-FREQ THRESH SPIN-'])
+                example_sentences = int(values['-USG EX SPIN-'])
 
                 old_stdout = sys.stdout
                 new_stdout = io.StringIO()
@@ -496,7 +552,7 @@ def main():
                     file_export_option,
                     (comprehension_percentage, frequency_threshold, example_sentences,
                      hanzi_frequency_order, hanzi_distance_order),
-                    stats_export_mode
+                    (stats_export_mode, stats_export_options)
                 )
 
                 sg.popup_scrolled(new_stdout.getvalue(), title='Export Log', size=(50, 20))

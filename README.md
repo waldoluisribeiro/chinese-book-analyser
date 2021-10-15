@@ -23,11 +23,6 @@ Choose the folder to which you want to export the resulting CSV files by selecti
 * Individual: Exports a list of the unique characters in each selected book
 * Shared: Exports a list of the characters in common among all the selected books
 
-#### Export (Hanzi Mode: Individual)
-* Unique Hanzi: Exports a list of the unique characters in each selected book
-* Hanzi to Learn: Exports a list of the characters in each selected book to learn, based on the parameters in the 'Learning' section
-* Both: Exports both of the above
-
 #### Frequency (Hanzi Mode: Individual/Shared)
 * Low > High
 * High > Low
@@ -35,6 +30,11 @@ Choose the folder to which you want to export the resulting CSV files by selecti
 #### Distance (Hanzi Mode: Individual)
 * Low > High
 * High > Low
+
+#### Export (Hanzi Mode: Individual)
+* Unique Hanzi: Exports a list of the unique characters in each selected book
+* Hanzi to Learn: Exports a list of the characters in each selected book to learn, based on the parameters in the 'Learning' section
+* Both: Exports both of the above
 
 #### Learning (Hanzi Mode: Individual)
 ##### Usage examples
@@ -47,6 +47,12 @@ The desired comprehension percentage. Ranges from 90 to 100. Defaults to 98.
 The frequency from which to begin selected words to learn. Ranges from 10 to 50. Defaults to 20.
 
 #### Statistics
+##### Mode
 * None
 * Individual: Exports statistics for each selected book in separate CSV files
 * Combined: Exports statistics for all selected books in a single CSV file
+
+##### Options
+* Total number of hanzi
+* Total number of unique hanzi
+* Hanzi percentiles: The hanzi within various percentiles as a percentage of the total number of hanzi

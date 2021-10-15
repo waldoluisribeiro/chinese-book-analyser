@@ -98,7 +98,8 @@ class Book:
         self.hanzi = {}  # key: hanzi string, value: Hanzi object
         self.hanzi_sorted = ([], None, None)  # (sorted list of hanzi, reverse frequency, reverse distance)
         self.total_hanzi = 0
-        self.statistics = []  # [(statistic heading, statistic value)]
+        self.statistics = {}  # statistic_name: (statistic_heading, statistic_value)
+        self.statistics_parameters = {'percentiles': [1, 2, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 95]}
         print(f'- created book entitled "{title}"')
         try:
             self.prepare_for_export()
@@ -372,36 +373,37 @@ class Book:
 
         print(f'- calculating statistics for "{self.title}"')
 
-        percentiles = [1, 2, 5, 10, 15, 20, 30, 40, 50]
-
         # total number of hanzi
         self.total_hanzi = sum(getattr(hz, 'frequency') for hz in self.hanzi_sorted[0])
-        self.statistics.append(('total hanzi', f'{self.total_hanzi:d}'))
+        self.statistics['total hanzi'] = ('total hanzi', f'{self.total_hanzi:d}')
 
         # total number of unique hanzi
         tally_unique_hanzi = len(self.hanzi_sorted[0])
-        self.statistics.append((f'total unique hanzi', f'{tally_unique_hanzi:d}'))
+        self.statistics['unique hanzi'] = (f'total unique hanzi', f'{tally_unique_hanzi:d}')
 
-        # most frequent hanzi as percentage of total number of hanzi
-        most_frequent_hanzi_as_percentage_of_total = {}
+        # hanzi percentiles as percentage of total number of hanzi
         self.sort_hanzi()
-        for i in percentiles:
+        hanzi_percentiles_as_percentage_of_total = {}
+        for i in self.statistics_parameters['percentiles']:
             index_of_hanzi_at_percentile = round(i / 100 * len(self.hanzi_sorted[0]))
-            most_frequent_hanzi_as_percentage_of_total[i] = sum(
+            hanzi_percentiles_as_percentage_of_total[i] = sum(
                 getattr(hanzi, 'frequency') for hanzi in
                 self.hanzi_sorted[0][:index_of_hanzi_at_percentile]) / self.total_hanzi
-            self.statistics.append(
-                (f'top {i}% of hanzi as % of book', f'{most_frequent_hanzi_as_percentage_of_total[i]:%}'))
-            self.statistics.append((f'no. hanzi in top {i}% of unique hanzi', f'{index_of_hanzi_at_percentile}'))
+            self.statistics[f'percentile {i} percentage'] = (f'top {i}% of hanzi as % of book',
+                                                             f'{hanzi_percentiles_as_percentage_of_total[i]:%}')
+            self.statistics[f'percentile {i} number'] = (f'no. hanzi in top {i}% of unique hanzi',
+                                                         f'{index_of_hanzi_at_percentile}')
 
         print(f'- calculated statistics for "{self.title}"')
 
-    def export_statistics(self, path: str) -> None:
+    def export_statistics(self, path: str, to_export: tuple[bool, bool, bool]) -> None:
         """
         Exports self.statistics as CSV.
 
         :param path: Export path
         :type path: str
+        :param to_export: Statistics to export
+        :type to_export: tuple
 
         :raises IOError: Path not writable
 
@@ -409,10 +411,21 @@ class Book:
         :rtype: None
         """
         print(f'- exporting statistics for "{self.title}"')
+        statistics_to_export = []
+
+        if to_export[0]:
+            statistics_to_export.append(self.statistics['total hanzi'])
+        if to_export[1]:
+            statistics_to_export.append(self.statistics['unique hanzi'])
+        if to_export[2]:
+            for percentile in self.statistics_parameters['percentiles']:
+                statistics_to_export.append(self.statistics[f'percentile {percentile} percentage'])
+                statistics_to_export.append(self.statistics[f'percentile {percentile} number'])
+
         try:
             with open(os.path.join(path, f'{self.title}_stats.csv'), 'w', newline='',
                       encoding='utf_8_sig') as stats_csv:
-                headings, values = map(list, zip(*self.statistics))
+                headings, values = map(list, zip(*statistics_to_export))
                 stats_csv.write(','.join(headings) + '\n')
                 stats_csv.write(','.join(values) + '\n')
         except IOError:
@@ -420,7 +433,8 @@ class Book:
         print(f'- exported statistics for "{self.title}" to "{path}"')
 
     @staticmethod
-    def export_combined_statistics_csv(books: list[Book], path: str) -> None:
+    def export_combined_statistics_csv(books: list[Book], path: str,
+                                       to_export: tuple[bool, bool, bool]) -> None:
         """
         Exports statistics of all books in combined CSV.
 
@@ -428,6 +442,8 @@ class Book:
         :type books: list
         :param path: Export path
         :type path: str
+        :param to_export: Statistics to export
+        :type to_export: tuple
 
         :raises IOError: Path not writable
 
@@ -438,7 +454,18 @@ class Book:
         csv_headings = []
         csv_values = []
         for index, book in enumerate(books):
-            stat_headings, stat_values = map(list, zip(*book.statistics))
+            statistics_to_export = []
+
+            if to_export[0]:
+                statistics_to_export.append(book.statistics['total hanzi'])
+            if to_export[1]:
+                statistics_to_export.append(book.statistics['unique hanzi'])
+            if to_export[2]:
+                for percentile in book.statistics_parameters['percentiles']:
+                    statistics_to_export.append(book.statistics[f'percentile {percentile} percentage'])
+                    statistics_to_export.append(book.statistics[f'percentile {percentile} number'])
+
+            stat_headings, stat_values = map(list, zip(*statistics_to_export))
             stat_headings.insert(0, 'book title')
             stat_values.insert(0, book.title)
             if index == 0:
