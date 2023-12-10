@@ -1,2 +1,2 @@
-PySimpleGUI == 4.60.3
-zhon == 1.1.5
+PySimpleGUI == 4.60.5
+zhon == 2.0.2
